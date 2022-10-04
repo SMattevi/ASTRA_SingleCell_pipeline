@@ -1,0 +1,650 @@
+configfile: "config/config.yaml"
+
+SMP = [0]
+
+myoutput=list()
+
+
+if "gex_bulk" in config["tech"]:
+    myoutput.append(expand("results/{tec}/ASE{chrom}_bulk",chrom=config["chromosomes_to_phase"],tec="gex_bulk"))
+if "atac" in config["tech"]:
+    myoutput.append(expand("results/{tec}/ASE{chrom}",chrom=config["chromosomes_to_phase"],tec="atac"))
+if "gex" in config["tech"]:
+    myoutput.append(expand("results/{tec}/ASE{chrom}",chrom=config["chromosomes_to_phase"],tec="gex"))
+
+
+#functions 
+
+def get_file_names(wildcards):
+    ck_output = checkpoints.split_bam.get(**wildcards).output[0]
+    global SMP
+    SMP, = glob_wildcards(os.path.join(ck_output, "cluster_{sample}.bam"))
+    return expand("results/{tech}/data_by_clusters/cluster_{SAMPLE}.bam", SAMPLE=SMP,tech=wildcards.tec)
+
+#rules and checkpoints 
+
+rule all:
+    input:
+        myoutput,
+        expand("results/phased/chr{chrom}_phased.vcf.gz",chrom=config["chromosomes_to_phase"])
+        #expand("results/{tec}/ASE{chrom}",chrom=config["chromosomes_to_phase"],tec=config["tech"])
+        
+
+##########################
+#### ATAC preparation ####
+##########################
+
+#Debarcode 10x scATAC FASTQ files by adding the cell barcode from R2 in from of the original read name for each read in R1 and R3 
+#(https://raw.githubusercontent.com/aertslab/single_cell_toolkit/2da8cbf09474903d050ecdb073da1afd99347eee/debarcode_10x_scatac_fastqs.sh)
+rule debarcoding_FASTQ:
+    input:
+        expand("{path}/{sample}_{num}_001.fastq.gz",path=config["input_path"], num=['R1', 'R2','R3'], allow_missing=True)
+    conda: "envs/samtools.yml"
+    output:
+        temp("results/atac/barcodecorrection/{sample}_R1.fastq.gz"),
+        temp("results/atac/barcodecorrection/{sample}_R2.fastq.gz")        
+    shell:
+        """bash workflow/scripts/debarcode_10x_scatac_fastqs.sh {input} results/atac/barcodecorrection/{wildcards.sample}"""
+
+##########################
+#### GEX preparation #####
+##########################
+
+#Merge the different lanes reads for R2 (assuming only 1 sample)
+rule merge_samples_R2:
+    input:
+        expand("{sample}_R2_001.fastq.gz", sample = config["sample_prefix_lane"])
+    output:
+        temp("results/gex/fastq/merged_R2.fastq.gz")
+    shell:
+        "cat {input} > {output}"
+
+#Merge the different lanes reads for R1 (assuming only 1 sample)
+rule merge_samples_R1:
+    input:
+        expand("{sample}_R1_001.fastq.gz", sample = config["sample_prefix_lane"])
+    output:
+        "results/gex/fastq/merged_R1.fastq.gz"
+    shell:
+        "cat {input} > {output}"
+
+#Cells are called from scATAC and these are used for the extraction in scRNA-> 10x give a "translation" from atac to rna barcodes (called barcode_metrix.tsv)
+rule whitelist_creation_from_atac:
+    input:
+        atac_bar="results/atac/filtered_matrix/MACS2/FILTER/barcodes_doubletsRemoved.txt",
+        barcode_info=config["barcoded_metrics"] #from 10x 
+    output:
+        "results/gex/umitools_extr/whitelist_atac.txt"
+    shell:
+        "Rscript workflow/scripts/whitelist_atac_creation.R {input.atac_bar} {input.barcode_info} {output}"
+
+#Cells are called from scRNA and these are used for the extraction in scATAC through Seurat integration
+rule whitelist_creation:
+    input:
+        "results/gex/fastq/merged_R1.fastq.gz"
+    output:
+        "results/gex/umitools_extr/whitelist_umitools.txt"
+    params:
+        pattern=config["pattern_umi"],
+        cell_num=config["cells_number_expected"]
+    conda:
+        "envs/umitools.yml"
+    shell:
+        "umi_tools whitelist --stdin {input} --bc-pattern={params.pattern} --knee-method=density"
+                " --log2stderr > {output} "
+
+#Effective extraction of barcodes and UMIs (given the whitelist created in #2) and apposition to read name using umi_tools extract
+rule extract_barcodes:
+    input:
+        Rfirst="results/gex/fastq/merged_R1.fastq.gz",
+        Rsecond="results/gex/fastq/merged_R2.fastq.gz",
+        whitelist=config["which_whitelist"]
+    output:
+        first="results/gex/umitools_extr/merged_R1_extracted.fastq.gz",
+        second="results/gex/umitools_extr/merged_R2_extracted.fastq.gz"
+    params:
+        pattern=config["pattern_umi"]
+    conda:
+        "envs/umitools.yml"
+    shell:
+        """ umi_tools extract --bc-pattern={params.pattern} \
+                 --stdin {input.Rfirst} \
+                 --stdout {output.first} \
+                 --read2-in {input.Rsecond} \
+                 --read2-out {output.second} \
+                 --whitelist {input.whitelist} 
+        """
+
+##########################
+#### alignment ###########
+##########################
+
+#Alignment performed with hisat using the "--no-spliced-alignment" and the paird end option for ATAC
+rule alignment_atac:
+    input:
+        R1=expand("results/atac/barcodecorrection/{sample}_R1.fastq.gz", sample=config["lanes"],sep=","),
+        R2=expand("results/atac/barcodecorrection/{sample}_R2.fastq.gz", sample=config["lanes"],sep=",")
+    threads: 
+        config["threads_num"]
+    params: 
+        index_gen = config["hisat_index"],
+    output:
+        temp("results/atac/alignment/atac.sam")
+    log: "logs/atac_hisat.log"
+    conda:
+        "envs/hisat.yml"
+    shell:
+        """ R1=$(echo {input.R1})
+            R1new=$(echo $R1 | sed 's/ /,/g ')
+            R2=$(echo {input.R2})
+            R2new=$(echo $R2 | sed 's/ /,/g ')
+            hisat2 -x {params.index_gen} \
+            -1 $R1new \
+            -2 $R2new \
+            -S {output} \
+            --no-spliced-alignment \
+            -p {threads} \
+            --summary-file {log}"""
+
+#Alignment performed with hisat for RNAseq
+rule alignment_gex:
+    input:
+        "results/gex/umitools_extr/merged_R2_extracted.fastq.gz",
+    output:
+        temp("results/gex/alignment/gex.sam")
+    threads: 
+        config["threads_num"]
+    params: 
+        config["hisat_index"]
+    log: "logs/gex_hisat.log"
+    conda:
+        "envs/hisat.yml"
+    shell:
+        """ hisat2 -x {params} \
+            -U {input} \
+            -S {output} \
+            -p {threads} \
+            --summary-file {log}"""
+
+#Alignment of pseudo-bulk 
+rule alignment_bulk_gex:
+    input:
+        "results/gex/fastq/merged_R2.fastq.gz",
+    output:
+        temp("results/gex_bulk/alignment/gex_bulk.sam")
+    threads: 
+        config["threads_num"]
+    params: 
+        config["hisat_index"]
+    log: "logs/bulkgex_hisat.log"
+    conda:
+        "envs/hisat.yml"
+    shell:
+        """ hisat2 -x {params} \
+            -U {input} \
+            -S {output} \
+            -p {threads} \
+            --summary-file {log}"""
+
+##########################
+#### QC post alignment ###
+##########################
+
+#Sort alignment result and mark duplicate 
+rule mark_dup_BAM:
+    input:
+        "results/{tec}/alignment/{tec}.sam"
+    output:
+        final_markdup="results/{tec}/alignment/{tec}.positionsort.bam",
+        final_markdup_index="results/{tec}/alignment/{tec}.positionsort.bam.bai",
+        tmpsort=temp("results/{tec}/{tec}.sorted.bam"),
+        out0=temp("results/{tec}/{tec}.positionsort0.bam"),
+        fixmate=temp("results/{tec}/{tec}.fixmate.bam")
+    conda: "envs/samtools.yml"
+    params: config["memory"]
+    threads: config["threads_num"]
+    shell: 
+        """ mkdir -p tmp
+        samtools sort -m {params} -T tmp/ -@ {threads} -n -o {output.tmpsort} {input}
+        
+        samtools fixmate -@ {threads} -m {output.tmpsort} {output.fixmate}
+        
+        samtools sort -m {params} -@ {threads} -T tmp/ -o {output.out0} {output.fixmate}
+       
+        samtools markdup -@ {threads} {output.out0} {output.final_markdup}
+        samtools index -@ {threads} {output.final_markdup} 
+        
+        rmdir tmp """
+
+#QC of the aligned bam file-> params -q 30 -> used to extract cells
+rule QC_BAM:
+    input:
+        "results/{tec}/alignment/{tec}.positionsort.bam"
+    threads: config["threads_num"]
+    conda: "envs/samtools.yml"
+    output:
+        "results/{tec}/mapping_result/{tec}.positionsort.MAPQ30.bam"
+    shell:
+        """ samtools view -f 0x2 -b -h -q 30 -@ {threads} {input} -o {output}
+        samtools index -@ {threads} {output} 
+        bash workflow/scripts/createsummary.sh {input} {output} {threads} {wildcards.tec} """
+
+##########################
+#### ATACseq analysis ####
+##########################
+
+#creation of the fragment file for ATACseq with sinto pipeline 
+rule fragment_file:
+    input: 
+        "results/atac/mapping_result/atac.positionsort.MAPQ30.bam"
+    threads: config["threads_num"]
+    output:
+        temp("results/atac/summary/fragments.notsorted.tsv")
+    conda: "envs/sinto.yml"
+    shell:
+        """ sinto fragments -b {input} -p {threads} -f {output} --barcode_regex "[^:]*" --use_chrom "(?i)" """
+
+#sort fragments
+rule sort:
+    input: 
+        "results/atac/summary/fragments.notsorted.tsv"
+    output:
+        final="results/atac/summary/atac.fragments.tsv.gz"
+    conda: "envs/samtools.yml"
+    threads: 
+        config["threads_num"]
+    params:
+        "results/atac/summary/atac.fragments.tsv"
+    shell:
+        """ sort -k1,1 -k2,2n {input} > {params}
+        bgzip -@ {threads} {params}
+        tabix -p bed {output.final} """
+
+#Call scATAC peaks with MACS2(can be changed from scATACconfig file)
+rule peak_calling:
+    input: 
+        "results/atac/mapping_result/atac.positionsort.MAPQ30.bam"
+    params:
+        config["config_file_scATACpro"]
+    singularity:
+        "docker://wbaopaul/scatac-pro:latest"
+    output:
+        "results/atac/peaks/MACS2/atac_features_BlacklistRemoved.bed"
+    shell:
+        """ scATAC-pro -s call_peak \
+            -i {input} \
+            -c {params} \
+            -o results/atac """
+
+rule get_mtx:
+    input: 
+        frag="results/atac/summary/atac.fragments.tsv.gz",
+        peaks="results/atac/peaks/MACS2/atac_features_BlacklistRemoved.bed"
+    params:
+        config["config_file_scATACpro"]
+    singularity:
+        "docker://wbaopaul/scatac-pro:latest"
+    output: 
+        "results/atac/raw_matrix/MACS2/matrix.mtx"
+    shell:
+        """ scATAC-pro -s get_mtx \
+            -i {input.frag},{input.peaks} \
+            -c {params} \
+            -o results/atac """
+
+rule qc_per_barcode:
+    input: 
+        frag="results/atac/summary/atac.fragments.tsv.gz",
+        peaks="results/atac/peaks/MACS2/atac_features_BlacklistRemoved.bed"
+    params:
+        config["config_file_scATACpro"]
+    singularity:
+        "docker://wbaopaul/scatac-pro:latest"
+    output:
+        "results/atac/summary/atac.MACS2.qc_per_barcode.txt"
+    shell:
+        """ scATAC-pro -s qc_per_barcode \
+            -i {input.frag},{input.peaks} \
+            -c {params} \
+            -o results/atac """
+
+#Call cell-> FILTER on MACS2 results-> change method in scATACconfig.txt
+rule call_cell:
+    input: 
+        raw="results/atac/raw_matrix/MACS2/matrix.mtx",
+        qc="results/atac/summary/atac.MACS2.qc_per_barcode.txt"
+    params:
+        config["config_file_scATACpro"]
+    singularity:
+        "docker://wbaopaul/scatac-pro:latest"
+    output:
+        "results/atac/filtered_matrix/MACS2/FILTER/barcodes.txt",
+        "results/atac/filtered_matrix/MACS2/FILTER/matrix.rds"
+    shell:
+        """ scATAC-pro -s call_cell \
+            -i {input.raw} \
+            -c {params} \
+            -o results/atac """
+
+rule rmDoublets:
+    input: 
+        "results/atac/filtered_matrix/MACS2/FILTER/matrix.rds"
+    params:
+        config["config_file_scATACpro"]
+    singularity:
+        "docker://wbaopaul/scatac-pro:latest"
+    output:
+        "results/atac/filtered_matrix/MACS2/FILTER/barcodes_doubletsRemoved.txt"
+    shell:
+        """ taskset 32 scATAC-pro -s rmDoublets \
+            -i {input},0.03 \
+            -c {params} \
+            -o results/atac """
+
+##########################
+#### RNAseq analysis #####
+##########################
+
+#6. Assign reads to genes
+rule featureCounting:
+    input:
+        bam="results/gex/alignment/gex.positionsort.bam",
+        genome= config["genome_gtf"]
+    output:
+        outreal="results/gex/alignment/gex.positionsort.bam.featureCounts.bam",
+        outsum="results/gex/alignment/gene_assigned"
+    conda:
+        "envs/umitools.yml"
+    threads: config["threads_num"]
+    shell:
+        """featureCounts -a {input.genome} \
+              -o {output.outsum} \
+              -R BAM {input.bam} \
+              -T {threads}  """
+
+#7. Sorting and indexing
+rule sortingANDindexing:
+    input:
+        "results/gex/alignment/gex.positionsort.bam.featureCounts.bam"
+    output:
+        "results/gex/alignment/assigned_sorted.bam"
+    conda:
+        "envs/samtools.yml"
+    threads: config["threads_num"]
+    shell:
+        """samtools sort {input} -o {output} -@{threads}
+        samtools index {output} -@{threads}"""
+
+#8. Count UMIs per gene per cell
+rule umi_counts:
+    input:
+        "results/gex/alignment/assigned_sorted.bam"
+    output:
+        "results/gex/features/counts.tsv.gz"
+    conda:
+        "envs/umitools.yml"
+    shell:
+        """ umi_tools count --per-gene \
+                --gene-tag=XT --assigned-status-tag=XS \
+                --per-cell -I {input} \
+                -S {output} 
+        """
+
+rule clustering_scGEX:
+    input:
+        "results/gex/features/counts.tsv.gz"
+    output:
+        "results/gex/features/cluster_gex.tsv"
+    singularity:
+        "docker://timoast/signac"
+    script:
+        "scripts/gex_clustering.R"
+
+rule assign_cluster_to_scATAC:
+    input:
+        "results/atac/filtered_matrix/MACS2/FILTER/matrix.rds",
+        "results/gex/features/cluster_gex.tsv"
+    output:
+        "results/atac/features/fromgex_cluster_atac.tsv"
+    singularity:
+        "docker://timoast/signac"
+    shell:
+        """ mkdir -p results/atac/features
+        mkdir -p results/plot
+        Rscript workflow/scripts/atac_clustering.R """
+
+rule clustering_scATAC:
+    input: 
+        "results/atac/filtered_matrix/MACS2/FILTER/matrix.rds"
+    params:
+        config["config_file_scATACpro"]
+    singularity:
+        "docker://wbaopaul/scatac-pro:latest"
+    output:
+        "results/atac/downstream_analysis/MACS2/FILTER/cell_cluster_table.tsv"
+    shell:
+        """ taskset 32 scATAC-pro -s clustering \
+            -i {input} \
+            -c {params} \
+            -o results/atac """
+            
+rule decision_scATAC_clustering:
+    input: 
+        config["which_clustering"]
+    output:
+        "results/atac/features/cluster_atac.tsv"
+    shell:
+        "mv {input} {output}"
+
+##########################
+#### variant calling ####
+##########################
+            
+#variant calling performed with strelka using the "GermlineWorkflow" and the "--exome" option
+rule variant_calling:
+    input:
+        bam="results/{tec}/alignment/{tec}.positionsort.bam",
+        fa=config["genome_fa"]
+    output: 
+        "results/{tec}/variant_calling/strelka/results/variants/variants.vcf.gz"
+    params:
+        config["strelka_path"]
+    shell:
+        """ {params}/bin/configureStrelkaGermlineWorkflow.py \
+        --bam {input.bam} \
+        --referenceFasta {input.fa} \
+        --runDir results/{wildcards.tec}/variant_calling/strelka \
+        --exome
+
+        results/{wildcards.tec}/variant_calling/strelka/runWorkflow.py  -m local -j 15 --quiet """
+
+#QC: extract only het variants, with AF and DP as specified in config file
+rule QC_VCF:
+    input:
+        "results/{tec}/variant_calling/strelka/results/variants/variants.vcf.gz"
+    output:
+        final="results/{tec}/variant_calling/strelka/results/variants/variantsQC.vcf.gz",
+	    initial="results/{tec}/variant_calling/strelka/results/variants/variantsPASS.vcf.gz",
+	    vcftbi="results/{tec}/variant_calling/strelka/results/variants/variantsQC.vcf.gz.tbi"
+    conda:
+        "envs/samtools.yml"
+    params:
+        AF=config["AF"],
+        DP=config["DP"]
+    shell:
+        """ bcftools view {input} -f PASS -O z -o {output.initial}
+	    bcftools view {output.initial} -i 'GT=="het" && AF>{params.AF} && DP>{params.DP}' -m2 -M2 -O z -o {output.final}
+	    tabix {output.final} """
+
+rule prephasing_WHATSHAP:
+    input:
+        vcf=expand("results/{tec}/variant_calling/strelka/results/variants/variantsQC.vcf.gz",tec=config["tech"]),
+        bam=expand("results/{tec}/alignment/{tec}.positionsort.bam",tec=config["tech"])
+    output:
+        v="results/{tec}/prephasing/pre_phased.vcf.gz",
+        t="results/{tec}/prephasing/pre_phased.vcf.gz.tbi"
+    params: 
+        config["genome_fa"]
+    conda:
+        "envs/whatshap.yml"
+    shell:
+        """ mkdir -p results/{wildcards.tec}/prephasing
+        whatshap phase -o results/{wildcards.tec}/prephasing/pre_phased.vcf --reference={params} {input.vcf} {input.bam} --ignore-read-groups
+        bgzip results/{wildcards.tec}/prephasing/pre_phased.vcf
+        tabix {output.v} """
+
+rule merge_tec_vcf:
+    input:
+        pp=expand("results/{tec}/variant_calling/strelka/results/variants/variantsQC.vcf.gz",tec=config["tech"]),
+    output:
+        v="results/merged_vcf/variantsQC.vcf.gz",
+        t="results/merged_vcf/variantsQC.vcf.gz.tbi",
+    conda:
+        "envs/samtools.yml"
+    shell:
+        """ bcftools concat {input.pp} -a | bcftools norm -d all -O z -o {output.v} 
+        tabix {output.v} """
+
+rule merge_tec_vcf_prephased:
+    input:
+        np=expand("results/{tec}/prephasing/pre_phased.vcf.gz",tec=config["tech"])
+    output:
+        vp="results/phased/pre_phased.vcf.gz",
+        tp="results/phased/pre_phased.vcf.gz.tbi",
+    conda:
+        "envs/samtools.yml"
+    shell:
+        """ bcftools concat {input.np} -a | bcftools norm -d all -O z -o {output.vp} 
+        tabix {output.vp} """
+
+rule divide_chr_VCF:
+    input:
+        "results/merged_vcf/variantsQC.vcf.gz"
+    output:
+        cv="results/merged_vcf/chr{chrom}QC.vcf.gz",
+        ct="results/merged_vcf/chr{chrom}QC.vcf.gz.tbi",
+    conda:
+        "envs/samtools.yml"
+    shell:
+        """ bcftools view {input} --regions {wildcards.chrom} -O z -o {output.cv}
+        tabix {output.cv} """
+
+##########################
+######## phasing ########
+##########################
+        
+#phase the quality controlled called SNPs with shapeit4
+rule phasing_SHAPEIT4:
+    input:
+        vcftbi="results/phased/pre_phased.vcf.gz.tbi",
+        vcf="results/phased/pre_phased.vcf.gz",
+        ref_vcf=expand("{path}/{prefix}{chrom}.{extension}", path=config["path_ALLvcf"],prefix=config["prefix_ALLvcf"],extension=config["extension_ALLvcf"],  allow_missing=True)
+    output: 
+        "results/phased/chr{chrom}_phased.vcf"
+    conda:
+        "envs/shapeit.yml"
+    threads: config["threads_num"]
+    params: 
+        sex=config["sex"]
+    shell:
+        """  if [ {wildcards.chrom} == "X" ]
+        then
+            if [ {params.sex} == "male" ]
+            then
+                shapeit4 --input {input.vcf} --region X:10000-2781479,X:155701382-156030895 --output {output} --thread {threads} --reference {input.ref_vcf}
+            else
+                shapeit4 --input {input.vcf} --region X --output {output} --thread {threads} --reference {input.ref_vcf}
+            fi
+        else 
+            shapeit4 --input {input.vcf} --region {wildcards.chrom} --output {output} --thread {threads} --reference {input.ref_vcf}
+        fi """
+
+rule bgzip_and_indexing:
+    input:
+        "results/phased/chr{chrom}_phased.vcf"
+    output: 
+        vcf="results/phased/chr{chrom}_phased.vcf.gz",
+        vcftbi="results/phased/chr{chrom}_phased.vcf.gz.tbi"
+    conda:
+        "envs/samtools.yml"
+    shell:
+        """ bgzip {input} 
+            tabix {output.vcf} """
+ 
+##########################
+#### Read group add ######
+##########################
+
+#modify bam header-> add read group needed for ASEReadCounter
+rule GATK_AddorRep:
+    input:
+        "results/{tec}/alignment/{tec}.positionsort.bam"
+    output:
+        "results/{tec}/alignment/gatkgroup.sorted.bam"
+    conda: "envs/gatk.yml"
+    shell:
+        """ gatk AddOrReplaceReadGroups -I {input} -O {output} -RGLB DNA -RGPL ILLUMINA -RGPU {wildcards.tec} -RGSM {wildcards.tec}_sample -VALIDATION_STRINGENCY SILENT """
+
+#split bam by clusters            
+checkpoint split_bam:
+    input: 
+        cluster_file="results/{tec}/features/cluster_{tec}.tsv",
+        bam="results/{tec}/alignment/gatkgroup.sorted.bam"
+    conda:
+        "envs/samtools.yml"
+    output:
+        directory("results/{tec}/data_by_clusters/")
+    shell:
+        """ mkdir -p {output}
+        if [ {wildcards.tec} == gex ]
+        then 
+            samtools view -h {input.bam} | awk -F"_" '{{if ($1 ~ /^@/) print $0; else print $2":"$0;}}' > barcode_corr.sam
+            samtools view barcode_corr.sam -o {input.bam} -@{threads}
+            rm barcode_corr.sam
+        fi
+        perl  workflow/scripts/split_bam2clusters.pl --cluster_file {input.cluster_file} --bam_file {input.bam} --output_dir {output} 
+        for i in {output}/*.bam; do samtools index $i -@{threads}; done """
+
+##########################
+#### ASE GATK ############
+##########################
+
+#Allelic specific expression: gatk ASEReadCounter over the phased vcf for each cluster bam
+rule ASEReadCount_cluster_sc:
+    input:
+        vcf= "results/merged_vcf/chr{chrom}QC.vcf.gz",
+        bam = get_file_names,
+        fa=config["genome_fa"]
+    output:
+        directory("results/{tec}/ASE{chrom}")
+    conda: "envs/gatk.yml"
+    params:
+        o = "results/{tec}/ASE{chrom}"
+    shell:
+        """ mkdir -p {params.o}
+        for C in {input.bam}; do gatk ASEReadCounter -R {input.fa}  -I $C -V {input.vcf}  -O {output}/$(basename "$C" | cut -d. -f1).table -L {wildcards.chrom}; done"""
+
+rule index_bulk_bam:
+    input:
+        "results/gex_bulk/alignment/gatkgroup.sorted.bam"
+    output:
+        "results/gex_bulk/alignment/gatkgroup.sorted.bam.bai"
+    conda: "envs/samtools.yml"
+    shell:
+        """ samtools index {input}"""
+
+#Allelic specific expression: gatk ASEReadCounter over the phased vcf for each cluster bam
+rule ASEReadCount_cluster_bulk:
+    input:
+        vcf= "results/merged_vcf/chr{chrom}QC.vcf.gz",
+        bam = "results/gex_bulk/alignment/gatkgroup.sorted.bam",
+        bai = "results/gex_bulk/alignment/gatkgroup.sorted.bam.bai",
+        fa=config["genome_fa"]
+    output:
+        directory("results/gex_bulk/ASE{chrom}_bulk")
+    conda: "envs/gatk.yml"
+    params:
+        o = "results/gex_bulk/ASE{chrom}_bulk"
+    shell:
+        """ mkdir -p {params.o}
+        gatk ASEReadCounter -R {input.fa}  -I {input.bam} -V {input.vcf}  -O {output}/gatkgroup.sorted.table -L {wildcards.chrom}"""
