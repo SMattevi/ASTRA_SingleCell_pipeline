@@ -1,0 +1,83 @@
+######################################################################
+##ATAC
+######################################################################
+
+lanes: ##prefix input name for all the lane of the sample (supposed extension _R1.fastq.gz and _R2.fastq.gz)
+    - "SampleA_lane1"
+    - "SampleA_lane2"
+
+input_path: "path/input/folder"
+
+
+######################################################################
+##GEX
+######################################################################
+
+sample_prefix_lane: ##prefix input name for all the lane of the sample (supposed extension _R1.fastq.gz and _R2.fastq.gz)
+  - path/input/folder/SampleB_lane1
+  - ...
+
+pattern_umi: "CCCCCCCCCCCCCCCCNNNNNNNNNN" #patter of cell barcode and umi, here for example 16 bases of cell barcode bollowed by 10 ases of UMI
+#expected number of cells if available
+cells_number_expected: 3000
+
+which_whitelist: "results/gex/umitools_extr/whitelist_umitools.txt"  #"results/gex/umitools_extr/whitelist_atac.txt" if available atac list of cells (barcoded_metrics)  or "results/gex/umitools_extr/whitelist_umitools.txt"  
+barcoded_metrics: resources/human_brain_3k_per_barcode_metrics.csv
+which_clustering: "results/atac/features/fromgex_cluster_atac.tsv" #"results/atac/downstream_analysis/MACS2/FILTER/cell_cluster_table.tsv" #or "results/atac/features/fromgex_cluster_atac.tsv"
+
+######################################################################
+##GLOBAL
+######################################################################
+
+threads_num: 5
+memory: 1G
+
+hisat_index: "resources/hisat2/human/hg38/genome_snp_tran"
+
+config_file_scATACpro: "config/scATACconfig.txt"
+
+genome_gtf: "resources/genome/human/hg38/Homo_sapiens.GRCh38.106.chr.gtf"
+
+genome_fa: "resources/genome/human/hg38/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
+
+strelka_path: "resources/strelka/share/strelka-2.9.10-1/"
+
+path_ALLvcf: resources/1kgenome/30x
+prefix_ALLvcf: chr
+extension_ALLvcf: vcf.gz
+
+tech: #if not each "technoogy" comment line
+  - "atac"
+  - "gex"
+  - "gex_bulk"
+  
+#variants QC parameters  
+AF: 0.2
+DP: 10
+
+chromosomes_to_phase: 
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+  - 15
+  - 16
+  - 17
+  - 18
+  - 19
+  - 20
+  - 21
+  - 22
+  - "X"
+
+sex: "female" # or male
