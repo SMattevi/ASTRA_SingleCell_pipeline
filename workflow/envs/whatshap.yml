@@ -61,4 +61,3 @@ dependencies:
   - xopen=1.6.0=py310hff52083_0
   - xz=5.2.6=h166bdaf_0
   - zlib=1.2.12=h166bdaf_2
-prefix: /home/smattevi/miniconda3/envs/whatshap
