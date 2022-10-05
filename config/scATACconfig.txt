@@ -12,11 +12,11 @@ OUTPUT_PREFIX = atac     ## prefix for ouput file name
 isSingleEnd = FALSE         ## scTHS-seq uses single end sequencing
 
 ## annotation files (blacklist, promoters, enhancers, TSS, etc)
-BLACKLIST = resources/hg38_blacklist_nochr.bed
-PROMOTERS = resources/hg38_promoter_nochr.bed
-ENHANCERS = resources/hg38_enhancer_nochr.bed
-TSS = resources/hg38_tss_nochr.bed
-CHROM_SIZE_FILE = resources/chrom_hg38_nochr.sizes
+BLACKLIST = scATAC-pro_annotation/hg38_blacklist_nochr.bed
+PROMOTERS = scATAC-pro_annotation/hg38_promoter_nochr.bed
+ENHANCERS = scATAC-pro_annotation/hg38_enhancer_nochr.bed
+TSS = scATAC-pro_annotation/hg38_tss_nochr.bed
+CHROM_SIZE_FILE = scATAC-pro_annotation/chrom_hg38_nochr.sizes
 
 GENOME_NAME = hg38   ## used for TF motif enrichemnt and footprinting analysis
 plotEPS = TRUE  ## print figures in eps format when generating summary report
