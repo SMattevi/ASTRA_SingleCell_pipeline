@@ -9,7 +9,7 @@ rule fragment_file:
     threads: config["threads_num"]
     output:
         temp("results/atac/summary/fragments.notsorted.tsv")
-    conda: "envs/sinto.yml"
+    conda: "../envs/sinto.yml"
     shell:
         """ sinto fragments -b {input} -p {threads} -f {output} --barcode_regex "[^:]*" --use_chrom "(?i)" """
 
@@ -19,7 +19,7 @@ rule sort:
         "results/atac/summary/fragments.notsorted.tsv"
     output:
         final="results/atac/summary/atac.fragments.tsv.gz"
-    conda: "envs/samtools.yml"
+    conda: "../envs/samtools.yml"
     threads: 
         config["threads_num"]
     params:
@@ -123,7 +123,7 @@ rule featureCounting:
         outreal="results/gex/alignment/gex.positionsort.bam.featureCounts.bam",
         outsum="results/gex/alignment/gene_assigned"
     conda:
-        "envs/umitools.yml"
+        "../envs/umitools.yml"
     threads: config["threads_num"]
     shell:
         """featureCounts -a {input.genome} \
@@ -138,7 +138,7 @@ rule sortingANDindexing:
     output:
         "results/gex/alignment/assigned_sorted.bam"
     conda:
-        "envs/samtools.yml"
+        "../envs/samtools.yml"
     threads: config["threads_num"]
     shell:
         """samtools sort {input} -o {output} -@{threads}
@@ -151,7 +151,7 @@ rule umi_counts:
     output:
         "results/gex/features/counts.tsv.gz"
     conda:
-        "envs/umitools.yml"
+        "../envs/umitools.yml"
     shell:
         """ umi_tools count --per-gene \
                 --gene-tag=XT --assigned-status-tag=XS \

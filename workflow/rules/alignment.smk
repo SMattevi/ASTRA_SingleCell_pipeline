@@ -15,7 +15,7 @@ rule alignment_atac:
         temp("results/atac/alignment/atac.sam")
     log: "logs/atac_hisat.log"
     conda:
-        "envs/hisat.yml"
+        "../envs/hisat.yml"
     shell:
         """ R1=$(echo {input.R1})
             R1new=$(echo $R1 | sed 's/ /,/g ')
@@ -41,7 +41,7 @@ rule alignment_gex:
         config["hisat_index"]
     log: "logs/gex_hisat.log"
     conda:
-        "envs/hisat.yml"
+        "../envs/hisat.yml"
     shell:
         """ hisat2 -x {params} \
             -U {input} \
@@ -61,7 +61,7 @@ rule alignment_bulk_gex:
         config["hisat_index"]
     log: "logs/bulkgex_hisat.log"
     conda:
-        "envs/hisat.yml"
+        "../envs/hisat.yml"
     shell:
         """ hisat2 -x {params} \
             -U {input} \

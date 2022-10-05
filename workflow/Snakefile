@@ -18,15 +18,6 @@ if "atac" in config["tech"]:
 if "gex" in config["tech"]:
     myoutput.append(expand("results/{tec}/ASE{chrom}",chrom=config["chromosomes_to_phase"],tec="gex"))
 
-
-#functions 
-
-def get_file_names(wildcards):
-    ck_output = checkpoints.split_bam.get(**wildcards).output[0]
-    global SMP
-    SMP, = glob_wildcards(os.path.join(ck_output, "cluster_{sample}.bam"))
-    return expand("results/{tech}/data_by_clusters/cluster_{SAMPLE}.bam", SAMPLE=SMP,tech=wildcards.tec)
-
 #rules and checkpoints 
 
 rule all:

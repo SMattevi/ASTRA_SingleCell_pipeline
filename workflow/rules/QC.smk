@@ -12,7 +12,7 @@ rule mark_dup_BAM:
         tmpsort=temp("results/{tec}/{tec}.sorted.bam"),
         out0=temp("results/{tec}/{tec}.positionsort0.bam"),
         fixmate=temp("results/{tec}/{tec}.fixmate.bam")
-    conda: "envs/samtools.yml"
+    conda: "../envs/samtools.yml"
     params: config["memory"]
     threads: config["threads_num"]
     shell: 
@@ -33,7 +33,7 @@ rule QC_BAM:
     input:
         "results/{tec}/alignment/{tec}.positionsort.bam"
     threads: config["threads_num"]
-    conda: "envs/samtools.yml"
+    conda: "../envs/samtools.yml"
     output:
         "results/{tec}/mapping_result/{tec}.positionsort.MAPQ30.bam"
     shell:

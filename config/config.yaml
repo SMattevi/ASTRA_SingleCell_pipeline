@@ -3,10 +3,10 @@
 ######################################################################
 
 lanes: ##prefix input name for all the lane of the sample (supposed extension _R1.fastq.gz and _R2.fastq.gz)
-    - "SampleA_lane1"
-    - "SampleA_lane2"
+  - "SampleA_lane1"
+  - "SampleA_lane2"
 
-input_path: "path/input/folder"
+input_path: "path/input/folderatac"
 
 
 ######################################################################
@@ -14,7 +14,7 @@ input_path: "path/input/folder"
 ######################################################################
 
 sample_prefix_lane: ##prefix input name for all the lane of the sample (supposed extension _R1.fastq.gz and _R2.fastq.gz)
-  - path/input/folder/SampleB_lane1
+  - path/input/foldergex/SampleA_lane1
   - ...
 
 pattern_umi: "CCCCCCCCCCCCCCCCNNNNNNNNNN" #patter of cell barcode and umi, here for example 16 bases of cell barcode bollowed by 10 ases of UMI

@@ -7,7 +7,7 @@
 rule debarcoding_FASTQ:
     input:
         expand("{path}/{sample}_{num}_001.fastq.gz",path=config["input_path"], num=['R1', 'R2','R3'], allow_missing=True)
-    conda: "envs/samtools.yml"
+    conda: "../envs/samtools.yml"
     output:
         temp("results/atac/barcodecorrection/{sample}_R1.fastq.gz"),
         temp("results/atac/barcodecorrection/{sample}_R2.fastq.gz")        
@@ -56,7 +56,7 @@ rule whitelist_creation:
         pattern=config["pattern_umi"],
         cell_num=config["cells_number_expected"]
     conda:
-        "envs/umitools.yml"
+        "../envs/umitools.yml"
     shell:
         "umi_tools whitelist --stdin {input} --bc-pattern={params.pattern} --knee-method=density"
                 " --log2stderr > {output} "
@@ -73,7 +73,7 @@ rule extract_barcodes:
     params:
         pattern=config["pattern_umi"]
     conda:
-        "envs/umitools.yml"
+        "../envs/umitools.yml"
     shell:
         """ umi_tools extract --bc-pattern={params.pattern} \
                  --stdin {input.Rfirst} \

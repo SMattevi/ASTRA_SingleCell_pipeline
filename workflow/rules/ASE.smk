@@ -2,13 +2,21 @@
 #### Read group add ######
 ##########################
 
+#functions 
+
+def get_file_names(wildcards):
+    ck_output = checkpoints.split_bam.get(**wildcards).output[0]
+    global SMP
+    SMP, = glob_wildcards(os.path.join(ck_output, "cluster_{sample}.bam"))
+    return expand("results/{tech}/data_by_clusters/cluster_{SAMPLE}.bam", SAMPLE=SMP,tech=wildcards.tec)
+
 #modify bam header-> add read group needed for ASEReadCounter
 rule GATK_AddorRep:
     input:
         "results/{tec}/alignment/{tec}.positionsort.bam"
     output:
         "results/{tec}/alignment/gatkgroup.sorted.bam"
-    conda: "envs/gatk.yml"
+    conda: "../envs/gatk.yml"
     shell:
         """ gatk AddOrReplaceReadGroups -I {input} -O {output} -RGLB DNA -RGPL ILLUMINA -RGPU {wildcards.tec} -RGSM {wildcards.tec}_sample -VALIDATION_STRINGENCY SILENT """
 
@@ -18,7 +26,7 @@ checkpoint split_bam:
         cluster_file="results/{tec}/features/cluster_{tec}.tsv",
         bam="results/{tec}/alignment/gatkgroup.sorted.bam"
     conda:
-        "envs/samtools.yml"
+        "../envs/samtools.yml"
     output:
         directory("results/{tec}/data_by_clusters/")
     shell:
@@ -44,7 +52,7 @@ rule ASEReadCount_cluster_sc:
         fa=config["genome_fa"]
     output:
         directory("results/{tec}/ASE{chrom}")
-    conda: "envs/gatk.yml"
+    conda: "../envs/gatk.yml"
     params:
         o = "results/{tec}/ASE{chrom}"
     shell:
@@ -56,7 +64,7 @@ rule index_bulk_bam:
         "results/gex_bulk/alignment/gatkgroup.sorted.bam"
     output:
         "results/gex_bulk/alignment/gatkgroup.sorted.bam.bai"
-    conda: "envs/samtools.yml"
+    conda: "../envs/samtools.yml"
     shell:
         """ samtools index {input}"""
 
@@ -69,7 +77,7 @@ rule ASEReadCount_cluster_bulk:
         fa=config["genome_fa"]
     output:
         directory("results/gex_bulk/ASE{chrom}_bulk")
-    conda: "envs/gatk.yml"
+    conda: "../envs/gatk.yml"
     params:
         o = "results/gex_bulk/ASE{chrom}_bulk"
     shell:

@@ -29,7 +29,7 @@ rule QC_VCF:
 	    initial="results/{tec}/variant_calling/strelka/results/variants/variantsPASS.vcf.gz",
 	    vcftbi="results/{tec}/variant_calling/strelka/results/variants/variantsQC.vcf.gz.tbi"
     conda:
-        "envs/samtools.yml"
+        "../envs/samtools.yml"
     params:
         AF=config["AF"],
         DP=config["DP"]
@@ -48,7 +48,7 @@ rule prephasing_WHATSHAP:
     params: 
         config["genome_fa"]
     conda:
-        "envs/whatshap.yml"
+        "../envs/whatshap.yml"
     shell:
         """ mkdir -p results/{wildcards.tec}/prephasing
         whatshap phase -o results/{wildcards.tec}/prephasing/pre_phased.vcf --reference={params} {input.vcf} {input.bam} --ignore-read-groups
@@ -62,7 +62,7 @@ rule merge_tec_vcf:
         v="results/merged_vcf/variantsQC.vcf.gz",
         t="results/merged_vcf/variantsQC.vcf.gz.tbi",
     conda:
-        "envs/samtools.yml"
+        "../envs/samtools.yml"
     shell:
         """ bcftools concat {input.pp} -a | bcftools norm -d all -O z -o {output.v} 
         tabix {output.v} """
@@ -74,7 +74,7 @@ rule merge_tec_vcf_prephased:
         vp="results/phased/pre_phased.vcf.gz",
         tp="results/phased/pre_phased.vcf.gz.tbi",
     conda:
-        "envs/samtools.yml"
+        "../envs/samtools.yml"
     shell:
         """ bcftools concat {input.np} -a | bcftools norm -d all -O z -o {output.vp} 
         tabix {output.vp} """
@@ -86,7 +86,7 @@ rule divide_chr_VCF:
         cv="results/merged_vcf/chr{chrom}QC.vcf.gz",
         ct="results/merged_vcf/chr{chrom}QC.vcf.gz.tbi",
     conda:
-        "envs/samtools.yml"
+        "../envs/samtools.yml"
     shell:
         """ bcftools view {input} --regions {wildcards.chrom} -O z -o {output.cv}
         tabix {output.cv} """
@@ -104,7 +104,7 @@ rule phasing_SHAPEIT4:
     output: 
         "results/phased/chr{chrom}_phased.vcf"
     conda:
-        "envs/shapeit.yml"
+        "../envs/shapeit.yml"
     threads: config["threads_num"]
     params: 
         sex=config["sex"]
@@ -128,7 +128,7 @@ rule bgzip_and_indexing:
         vcf="results/phased/chr{chrom}_phased.vcf.gz",
         vcftbi="results/phased/chr{chrom}_phased.vcf.gz.tbi"
     conda:
-        "envs/samtools.yml"
+        "../envs/samtools.yml"
     shell:
         """ bgzip {input} 
             tabix {output.vcf} """
