@@ -1,4 +1,4 @@
-
+#script from scATAC-pro https://github.com/wbaopaul/scATAC-pro
 #Run as follows:
 #perl split_bam2cluster.pl --cluster_file cluster_file --bam_file bam_file --output_dir output_dir --samtools_path SAMTOOLS_PATH
 
