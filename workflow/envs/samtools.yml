@@ -36,4 +36,3 @@ dependencies:
   - tk=8.6.11=h27826a3_1
   - xz=5.2.5=h516909a_1
   - zlib=1.2.11=h36c2ea0_1013
-prefix: /FBF/U_Genetica/home/smattevi/miniconda3/envs/samtools
