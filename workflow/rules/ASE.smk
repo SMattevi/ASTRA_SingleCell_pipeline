@@ -7,38 +7,47 @@
 def get_file_names(wildcards):
     ck_output = checkpoints.split_bam.get(**wildcards).output[0]
     global SMP
-    SMP, = glob_wildcards(os.path.join(ck_output, "cluster_{sample}.bam"))
-    return expand("results/{tech}/data_by_clusters/cluster_{SAMPLE}.bam", SAMPLE=SMP,tech=wildcards.tec)
+    SMP, = glob_wildcards(os.path.join(ck_output, "{sample}.bam"))
+    return expand("results/{tech}/data_by_clusters/{SAMPLE}.bam", SAMPLE=SMP,tech=wildcards.tec)
 
 #modify bam header-> add read group needed for ASEReadCounter
 rule GATK_AddorRep:
     input:
         "results/{tec}/alignment/{tec}.positionsort.bam"
     output:
-        "results/{tec}/alignment/gatkgroup.sorted.bam"
+        "results/{tec}/alignment/gatkgroup.sorted_in.bam"
     conda: "../envs/gatk.yml"
     shell:
         """ gatk AddOrReplaceReadGroups -I {input} -O {output} -RGLB DNA -RGPL ILLUMINA -RGPU {wildcards.tec} -RGSM {wildcards.tec}_sample -VALIDATION_STRINGENCY SILENT """
 
-#split bam by clusters            
+rule corr_barcode:
+    input:
+        bam="results/{tec}/alignment/gatkgroup.sorted_in.bam"
+    output:
+        "results/{tec}/alignment/gatkgroup.sorted.bam"
+    conda: "../envs/gatk.yml"
+    shell:
+        """ if [ {wildcards.tec} == gex ]
+        then 
+            samtools view -h {input.bam} | awk -F"_" '{{if ($1 ~ /^@/) print $0; else print $2":"$0;}}' > barcode_corr.sam
+            samtools view barcode_corr.sam -o {input.bam} -@{threads}
+            rm barcode_corr.sam
+        fi 
+        mv {input} {output}
+        samtools index {output}"""
+
 checkpoint split_bam:
     input: 
         cluster_file="results/{tec}/features/cluster_{tec}.tsv",
         bam="results/{tec}/alignment/gatkgroup.sorted.bam"
     conda:
-        "../envs/samtools.yml"
+        "../envs/sinto.yml"
     output:
         directory("results/{tec}/data_by_clusters/")
+    threads: config["threads_num"]
+    conda: "../envs/sinto.yml"
     shell:
-        """ mkdir -p {output}
-        if [ {wildcards.tec} == gex ]
-        then 
-            samtools view -h {input.bam} | awk -F"_" '{{if ($1 ~ /^@/) print $0; else print $2":"$0;}}' > barcode_corr.sam
-            samtools view barcode_corr.sam -o {input.bam} -@{threads}
-            rm barcode_corr.sam
-        fi
-        perl  workflow/scripts/split_bam2clusters.pl --cluster_file {input.cluster_file} --bam_file {input.bam} --output_dir {output} 
-        for i in {output}/*.bam; do samtools index $i -@{threads}; done """
+        """ sinto filterbarcodes -b {input.bam} -p {threads} -c {input.cluster_file} --outdir {output} --barcode_regex "[^:]*" """
 
 ##########################
 #### ASE GATK ############
@@ -48,16 +57,17 @@ checkpoint split_bam:
 rule ASEReadCount_cluster_sc:
     input:
         vcf= "results/merged_vcf/chr{chrom}QC.vcf.gz",
-        bam = get_file_names,
-        fa=config["genome_fa"]
+        bam = get_file_names
     output:
         directory("results/{tec}/ASE{chrom}")
-    conda: "../envs/gatk.yml"
+    conda: "../envs/ASE.yml"
     params:
-        o = "results/{tec}/ASE{chrom}"
+        fa=config["genome_fa"]
     shell:
-        """ mkdir -p {params.o}
-        for C in {input.bam}; do gatk ASEReadCounter -R {input.fa}  -I $C -V {input.vcf}  -O {output}/$(basename "$C" | cut -d. -f1).table -L {wildcards.chrom}; done"""
+        """ mkdir -p "results/{tec}/ASE{chrom}"
+        for C in {input.bam}; do 
+        samtools index $C
+        gatk ASEReadCounter -R {params.fa}  -I $C -V {input.vcf}  -O {output}/$(basename "$C" | cut -d. -f1).table -L {wildcards.chrom}; done"""
 
 rule index_bulk_bam:
     input:

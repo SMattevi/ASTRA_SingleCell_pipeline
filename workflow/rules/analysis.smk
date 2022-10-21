@@ -33,17 +33,23 @@ rule sort:
 rule peak_calling:
     input: 
         "results/atac/mapping_result/atac.positionsort.MAPQ30.bam"
-    params:
-        config["config_file_scATACpro"]
-    singularity:
-        "docker://wbaopaul/scatac-pro:latest"
     output:
         "results/atac/peaks/MACS2/atac_features_BlacklistRemoved.bed"
+    params:
+        config["bl_file"]
+    conda:
+        "../envs/peakcall.yml"
     shell:
-        """ scATAC-pro -s call_peak \
-            -i {input} \
-            -c {params} \
-            -o results/atac """
+        """ 
+        macs2 callpeak -t {input} --outdir results/atac -n atac -f BAMPE -q 0.05 -g hs --nomodel --extsize 200 --shift -100
+		
+        awk '{{ if ($1>=1 && $1<=22 || $1=="X" || $1=="Y" || $1=="M") {{print $0}}}}' results/atac/peaks/MACS2/atac_peaks.narrowPeak\
+            >results/atac/peaks/MACS2/tmp.narrowPeak
+        mv results/atac/peaks/MACS2/tmp.narrowPeak results/atac/peaks/MACS2/atac_peaks.narrowPeak
+
+        bedtools intersect -a results/atac/peaks/MACS2/atac_peaks.narrowPeak -b {params} -v \
+            > results/atac/peaks/MACS2/atac_features_BlacklistRemoved.bed
+        """
 
 rule get_mtx:
     input: 
@@ -167,7 +173,7 @@ rule clustering_scGEX:
     singularity:
         "docker://timoast/signac"
     script:
-        "scripts/gex_clustering.R"
+        "../scripts/gex_clustering.R"
 
 rule assign_cluster_to_scATAC:
     input:

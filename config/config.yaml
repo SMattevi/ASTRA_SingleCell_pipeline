@@ -8,6 +8,7 @@ lanes: ##prefix input name for all the lane of the sample (supposed extension _R
 
 input_path: "path/input/folderatac"
 
+bl_file: "scATAC-pro_annotation/hg38_blacklist.bed"
 
 ######################################################################
 ##GEX
