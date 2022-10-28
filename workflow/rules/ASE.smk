@@ -64,7 +64,7 @@ rule ASEReadCount_cluster_sc:
     params:
         fa=config["genome_fa"]
     shell:
-        """ mkdir -p "results/{wildcards.tec}/ASE{wildcards.chrom}
+        """ mkdir -p "results/{wildcards.tec}/ASE{wildcards.chrom}"
         for C in {input.bam}; do 
         samtools index $C
         gatk ASEReadCounter -R {params.fa}  -I $C -V {input.vcf}  -O {output}/$(basename "$C" | cut -d. -f1).table -L {wildcards.chrom}; done"""

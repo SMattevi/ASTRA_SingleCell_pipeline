@@ -1,4 +1,4 @@
-name: ASE
+ame: ASE
 channels:
   - conda-forge
   - bioconda
@@ -25,6 +25,7 @@ dependencies:
   - freetype=2.12.1=hca18f0e_0
   - fribidi=1.0.10=h36c2ea0_0
   - gatk=3.8=hdfd78af_11
+  - gatk4=4.3.0.0=py36hdfd78af_0
   - gcc_impl_linux-64=12.2.0=hcc96c02_18
   - gettext=0.21.1=h27087fc_0
   - gfortran_impl_linux-64=12.2.0=h55be85b_18
@@ -74,7 +75,7 @@ dependencies:
   - ncurses=6.3=h27087fc_1
   - numpy=1.23.4=py310h53a5b5f_0
   - openjdk=8.0.332=h166bdaf_0
-  - openssl=1.1.1q=h166bdaf_0
+  - openssl=1.1.1q=h166bdaf_1
   - pango=1.50.11=h382ae3d_0
   - pcre2=10.37=hc3806b6_1
   - pip=22.3=pyhd8ed1ab_0
