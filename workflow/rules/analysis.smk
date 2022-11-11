@@ -43,7 +43,6 @@ rule peak_calling:
         """ 
         mkdir -p results/atac/peaks/MACS2/
         macs2 callpeak -t {input} --outdir results/atac/peaks/MACS2/ -n atac -f BAMPE -q 0.05 -g hs --nomodel --extsize 200 --shift -100
-52a54
 		
         awk '{{ if ($1>=1 && $1<=22 || $1=="X" || $1=="Y" || $1=="M") {{print $0}}}}' results/atac/peaks/MACS2/atac_peaks.narrowPeak\
             >results/atac/peaks/MACS2/tmp.narrowPeak
