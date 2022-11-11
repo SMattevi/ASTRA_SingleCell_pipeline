@@ -58,8 +58,22 @@ rule whitelist_creation:
     conda:
         "../envs/umitools.yml"
     shell:
-        "umi_tools whitelist --stdin {input} --bc-pattern={params.pattern} --knee-method=density"
-                " --log2stderr > {output} "
+        """ 
+        if [[ {params.cell_num} > 0 ]]
+        then
+            umi_tools whitelist --stdin {input} \
+            --bc-pattern={params.pattern} \
+            --plot-prefix results/gex/umitools_extr/whitelist_umitools \
+            --expect-cells {params.cell_num} \
+            --knee-method=density \
+            --log2stderr > {output} 
+        else 
+            umi_tools whitelist --stdin {input} \
+            --bc-pattern={params.pattern} \
+            --knee-method=density \
+            --log2stderr > {output} 
+        fi
+        """
 
 #Effective extraction of barcodes and UMIs (given the whitelist created in #2) and apposition to read name using umi_tools extract
 rule extract_barcodes:
