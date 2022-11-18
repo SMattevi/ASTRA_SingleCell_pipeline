@@ -2,6 +2,8 @@
 
 Snakemake workflow for the analysis and integration of scRNA-seq and scATAC-seq data.
 
+<img src="./rulegraph_sc.svg">
+
 ## Input files needed
 
 As input are needed the gzipped fastq file of *one* sample (possibility to input multi-lane fastq). 
