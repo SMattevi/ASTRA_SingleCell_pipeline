@@ -55,7 +55,7 @@ for i in {1..22} X; do wget http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_colle
 ## How to run
 
 ```bash
-snakemake --cores [cores_number] --use-conda
+snakemake --cores [cores_number] --use-conda --use-singularity
 ```
 
 ## Results architecture
