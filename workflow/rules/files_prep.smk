@@ -9,10 +9,10 @@ rule debarcoding_FASTQ:
         expand("{path}/{sample}_{num}_001.fastq.gz",path=config["input_path"], num=['R1', 'R2','R3'], allow_missing=True)
     conda: "../envs/samtools.yml"
     output:
-        temp("results/atac/barcodecorrection/{sample}_R1.fastq.gz"),
-        temp("results/atac/barcodecorrection/{sample}_R2.fastq.gz")        
+        temp("results_{sample_id}/atac/barcodecorrection/{sample}_R1.fastq.gz"),
+        temp("results_{sample_id}/atac/barcodecorrection/{sample}_R2.fastq.gz")        
     shell:
-        """bash workflow/scripts/debarcode_10x_scatac_fastqs.sh {input} results/atac/barcodecorrection/{wildcards.sample}"""
+        """bash workflow/scripts/debarcode_10x_scatac_fastqs.sh {input} results_{wildcards.sample_id}/atac/barcodecorrection/{wildcards.sample}"""
 
 ##########################
 #### GEX preparation #####
@@ -23,7 +23,7 @@ rule merge_samples_R2:
     input:
         expand("{sample}_R2_001.fastq.gz", sample = config["sample_prefix_lane"])
     output:
-        temp("results/gex/fastq/merged_R2.fastq.gz")
+        temp("results_{sample_id}/gex/fastq/merged_R2.fastq.gz")
     shell:
         "cat {input} > {output}"
 
@@ -32,26 +32,26 @@ rule merge_samples_R1:
     input:
         expand("{sample}_R1_001.fastq.gz", sample = config["sample_prefix_lane"])
     output:
-        "results/gex/fastq/merged_R1.fastq.gz"
+        "results_{sample_id}/gex/fastq/merged_R1.fastq.gz"
     shell:
         "cat {input} > {output}"
 
 #Cells are called from scATAC and these are used for the extraction in scRNA-> 10x give a "translation" from atac to rna barcodes (called barcode_metrix.tsv)
 rule whitelist_creation_from_atac:
     input:
-        atac_bar="results/atac/filtered_matrix/MACS2/FILTER/barcodes_doubletsRemoved.txt",
+        atac_bar="results_{sample_id}/atac/filtered_matrix/MACS2/FILTER/barcodes_doubletsRemoved.txt",
         barcode_info=config["barcoded_metrics"] #from 10x 
     output:
-        "results/gex/umitools_extr/whitelist_atac.txt"
+        "results_{sample_id}/gex/umitools_extr/whitelist_atac.txt"
     shell:
         "Rscript workflow/scripts/whitelist_atac_creation.R {input.atac_bar} {input.barcode_info} {output}"
 
 #Cells are called from scRNA and these are used for the extraction in scATAC through Seurat integration
 rule whitelist_creation:
     input:
-        "results/gex/fastq/merged_R1.fastq.gz"
+        "results_{sample_id}/gex/fastq/merged_R1.fastq.gz"
     output:
-        "results/gex/umitools_extr/whitelist_umitools.txt"
+        "results_{sample_id}/gex/umitools_extr/whitelist_umitools.txt"
     params:
         pattern=config["pattern_umi"],
         cell_num=config["cells_number_expected"]
@@ -63,27 +63,54 @@ rule whitelist_creation:
         then
             umi_tools whitelist --stdin {input} \
             --bc-pattern={params.pattern} \
-            --plot-prefix results/gex/umitools_extr/whitelist_umitools \
+            --plot-prefix results_{wildcards.sample_id}/gex/umitools_extr/whitelist_umitools \
             --expect-cells {params.cell_num} \
             --knee-method=density \
             --log2stderr > {output} 
         else 
             umi_tools whitelist --stdin {input} \
             --bc-pattern={params.pattern} \
+            --plot-prefix results_{wildcards.sample_id}/gex/umitools_extr/whitelist_umitools \
             --knee-method=density \
             --log2stderr > {output} 
         fi
+        """
+rule whitelist_creation_alevin:
+    input:
+        R1=expand("{sample}_R1_001.fastq.gz", sample = config["sample_prefix_lane"]),
+        R2=expand("{sample}_R2_001.fastq.gz", sample = config["sample_prefix_lane"])
+    output: "results_{sample_id}/gex/alevin_output/alevin/whitelist.txt"
+    params:
+        protocol=config["sc_rna_protocol"],
+        salmon_index=config["salmon_index_directory"],
+        tx2gene=config["tx2gene"],
+        cell_num=config["cells_number_expected"]
+    conda:
+        "../envs/salmon.yml"
+    threads:
+        config["threads_num"]
+    shell:
+        """
+        salmon alevin -l ISR \
+            -1 {input.R1} \
+            -2 {input.R2} \
+            --{params.protocol} \
+            -i {params.salmon_index} \
+            -p {threads} \
+            --tgMap {params.tx2gene} \
+            --expectCells {params.cell_num} \
+            -o results_{wildcards.sample_id}/gex/alevin_output
         """
 
 #Effective extraction of barcodes and UMIs (given the whitelist created in #2) and apposition to read name using umi_tools extract
 rule extract_barcodes:
     input:
-        Rfirst="results/gex/fastq/merged_R1.fastq.gz",
-        Rsecond="results/gex/fastq/merged_R2.fastq.gz",
+        Rfirst="results_{sample_id}/gex/fastq/merged_R1.fastq.gz",
+        Rsecond="results_{sample_id}/gex/fastq/merged_R2.fastq.gz",
         whitelist=config["which_whitelist"]
     output:
-        first="results/gex/umitools_extr/merged_R1_extracted.fastq.gz",
-        second="results/gex/umitools_extr/merged_R2_extracted.fastq.gz"
+        first="results_{sample_id}/gex/umitools_extr/merged_R1_extracted.fastq.gz",
+        second="results_{sample_id}/gex/umitools_extr/merged_R2_extracted.fastq.gz"
     params:
         pattern=config["pattern_umi"]
     conda:
