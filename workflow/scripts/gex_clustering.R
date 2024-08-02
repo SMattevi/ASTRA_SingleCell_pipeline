@@ -1,15 +1,28 @@
-library(reshape2)
-library(dplyr)
-library(Seurat)
-library(Signac)
-library(patchwork)
-library(ggplot2)
-library(tidyr)
-library(stringr)
-library(biomaRt)
-library(data.table)
+# install.packages("remotes")
+# remotes::install_github("trevorld/r-optparse")
+# library("optparse")
+library("reshape2")
+library("dplyr")
+library("Seurat")
+library("Signac")
+library("patchwork")
+library("ggplot2")
+library("tidyr")
+library("stringr")
+library("biomaRt")
+library("data.table")
 
-setwd("results")
+# option_list = list(
+#   make_option(c("-s", "--sample"), type="character", default=NULL,
+#               help="sample id", metavar="character")
+# );
+
+# opt_parser = OptionParser(option_list=option_list);
+# opt = parse_args(opt_parser);
+# print(opt)
+
+# setwd(paste0("results_",opt$sample,"/"))
+
 counts_gex<-read.table("gex/features/counts.tsv.gz",header=T)
 
 countst<-reshape2::dcast(counts_gex,gene~cell, fill="0")
