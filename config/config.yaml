@@ -1,3 +1,5 @@
+sample_name: ABC
+
 ######################################################################
 ##ATAC
 ######################################################################
@@ -22,9 +24,25 @@ pattern_umi: "CCCCCCCCCCCCCCCCNNNNNNNNNN" #patter of cell barcode and umi, here 
 #expected number of cells if available
 cells_number_expected: 3000
 
-which_whitelist: "results/gex/umitools_extr/whitelist_umitools.txt"  #"results/gex/umitools_extr/whitelist_atac.txt" if available atac list of cells (barcoded_metrics)  or "results/gex/umitools_extr/whitelist_umitools.txt"  
+which_whitelist: "results/gex/umitools_extr/whitelist_umitools.txt"  #"results/gex/umitools_extr/whitelist_atac.txt" if available atac list of cells (barcoded_metrics)  or "results/gex/umitools_extr/whitelist_umitools.txt" or "results/gex/alevin_output/alevin/whitelist.txt"   
 barcoded_metrics: resources/human_brain_3k_per_barcode_metrics.csv
 which_clustering: "results/atac/features/fromgex_cluster_atac.tsv" #"results/atac/downstream_analysis/MACS2/FILTER/cell_cluster_table.tsv" #or "results/atac/features/fromgex_cluster_atac.tsv"
+sc_rna_protocol: "chromium" #or dropseq or chromiumV3 from https://salmon.readthedocs.io/en/latest/alevin.html#using-alevin "this flag tells the type of single-cell protocol of the input sequencing-library."
+salmon_index_directory: "/rds/general/user/smattevi/projects/lms-ware-analysis/live/smattevi/ASTRA/resources/indexes/salmon/human-tr111/"
+tx2gene: "resources/transcriptome/transcript2gene.txt"
+
+alignment: "hisat2"
+
+######################################################################
+##EXOME
+######################################################################
+
+fastqs_exome: ##prefix input name for all the lane of the sample
+    - ""
+
+path_exome: ""
+
+known_sites: "resources/genome/Homo_sapiens_assembly38.dbsnp138.vcf.gz" #ok
 
 ######################################################################
 ##GLOBAL
@@ -39,6 +57,8 @@ config_file_scATACpro: "config/scATACconfig.txt"
 
 genome_gtf: "resources/genome/human/hg38/Homo_sapiens.GRCh38.106.chr.gtf"
 
+genome_dict: "resources/genome/Homo_sapiens_assembly38.dict"
+
 genome_fa: "resources/genome/human/hg38/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
 
 strelka_path: "resources/strelka/share/strelka-2.9.10-1/"
@@ -51,6 +71,7 @@ tech: #if not each "technoogy" comment line
   - "atac"
   - "gex"
   - "gex_bulk"
+  - "exome"
   
 #variants QC parameters  
 AF: 0.2
