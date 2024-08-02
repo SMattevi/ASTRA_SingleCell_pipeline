@@ -1,4 +1,31 @@
 configfile: "config/config.yaml"
+	
+SMP = [0]
+
+myoutput=list()
+myinput=list()
+
+if "gex_bulk" in config["tech"]:
+    myoutput.append(expand("results_{sample_id}/{tec}/ASE{chrom}_bulk",chrom=config["chromosomes_to_phase"],tec="gex_bulk",sample_id=config["sample_name"]))
+    myoutput.append(expand("results_{sample_id}/phased/manual_refinment.vcf.gz",sample_id=config["sample_name"]))
+    myinput.append(expand("results_{sample_id}/{tec}/variant_calling/strelka/results/variants/variantsQC.vcf.gz",tec="gex_bulk",sample_id=config["sample_name"]))
+if "atac" in config["tech"]:
+    myoutput.append(expand("results_{sample_id}/{tec}/ASE{chrom}",chrom=config["chromosomes_to_phase"],tec="atac",sample_id=config["sample_name"]))
+    myinput.append(expand("results_{sample_id}/{tec}/variant_calling/strelka/results/variants/variantsQC.vcf.gz",tec="atac",sample_id=config["sample_name"]))
+if "gex" in config["tech"]:
+    myoutput.append(expand("results_{sample_id}/{tec}/ASE{chrom}",chrom=config["chromosomes_to_phase"],tec="gex",sample_id=config["sample_name"]))
+    myoutput.append(expand("results_{sample_id}/phased/manual_refinment.vcf.gz",sample_id=config["sample_name"]))
+    myinput.append(expand("results_{sample_id}/{tec}/variant_calling/strelka/results/variants/variantsQC.vcf.gz",tec="gex",sample_id=config["sample_name"]))
+if "exome"  in config["tech"]:
+    myoutput.append(expand("results_{sample_id}/{tec}/prephasing/pre_phased.vcf.gz",tec="exome",sample_id=config["sample_name"]))
+    myinput.append(expand("results_{sample_id}/{tec}/filtration/snps_het.vcf.gz",tec="exome",sample_id=config["sample_name"]))
+
+#rules and checkpoints 
+
+rule all:
+    input:
+        myoutput
+       
 
 include: "rules/files_prep.smk"
 include: "rules/alignment.smk"
@@ -6,21 +33,3 @@ include: "rules/QC.smk"
 include: "rules/analysis.smk"
 include: "rules/variant_call_phasing.smk"
 include: "rules/ASE.smk"
-	
-SMP = [0]
-
-myoutput=list()
-
-if "gex_bulk" in config["tech"]:
-    myoutput.append(expand("results/{tec}/ASE{chrom}_bulk",chrom=config["chromosomes_to_phase"],tec="gex_bulk"))
-if "atac" in config["tech"]:
-    myoutput.append(expand("results/{tec}/ASE{chrom}",chrom=config["chromosomes_to_phase"],tec="atac"))
-if "gex" in config["tech"]:
-    myoutput.append(expand("results/{tec}/ASE{chrom}",chrom=config["chromosomes_to_phase"],tec="gex"))
-
-#rules and checkpoints 
-
-rule all:
-    input:
-        myoutput,
-        expand("results/phased/chr{chrom}_phased.vcf.gz",chrom=config["chromosomes_to_phase"])
