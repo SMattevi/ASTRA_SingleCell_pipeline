@@ -44,7 +44,6 @@ rule alignment_gex:
         "../envs/hisat.yml"
     shell:
         """ hisat2 -x {params} \
-            -5 30 \
             -U {input} \
             -S {output} \
             -p {threads} \
@@ -65,7 +64,6 @@ rule alignment_bulk_gex:
         "../envs/hisat.yml"
     shell:
         """ hisat2 -x {params} \
-            -5 30 \
             -U {input} \
             -S {output} \
             -p {threads} \
