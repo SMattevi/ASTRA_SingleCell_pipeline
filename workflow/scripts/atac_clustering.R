@@ -4,7 +4,7 @@ BiocManager::install()
 dir.create(Sys.getenv("R_LIBS_USER"), recursive = TRUE)  # create personal library
 .libPaths(Sys.getenv("R_LIBS_USER"))  # add to the path
 
-BiocManager::install(c('BSgenome.Hsapiens.UCSC.hg38', 'EnsDb.Hsapiens.v86'))
+BiocManager::install(c('BSgenome.Hsapiens.UCSC.hg38', 'EnsDb.Hsapiens.v86','biovizBase'))
 
 library(reshape2)
 library(dplyr)
@@ -20,7 +20,7 @@ library(EnsDb.Hsapiens.v86)
 library(GenomeInfoDbData)
 library(data.table)
 
-setwd("results/")
+#setwd("results/")
 pdf(file=paste0("plot/atac_clustering.pdf"))
 gex<-readRDS("gex/features/gex_seurat.rds")
 
