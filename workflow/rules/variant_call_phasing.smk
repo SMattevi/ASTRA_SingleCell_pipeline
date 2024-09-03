@@ -11,6 +11,8 @@ rule variant_calling:
         "results_{sample_id}/{tec}/variant_calling/strelka/results/variants/variants.vcf.gz"
     params:
         config["strelka_path"]
+    conda:
+        "../envs/py2.yml"
     shell:
         """ {params}/bin/configureStrelkaGermlineWorkflow.py \
         --bam {input.bam} \
@@ -207,7 +209,7 @@ rule phasing_haptreex:
             {params.haptreex} -v temp.vcf -r {input.bam} -g {params.gtffile} -o {output} -d results_{params.sampleid}/exome/recalibration/exome.recal.bam
         elif [[ "{params.tec}" == *atac* ]]
         then
-            {params.haptreex} -v temp.vcf -r {input.bam} -g {params.gtffile} -o {output} -d results_{params.sampleid}/atac/recalibration/atac.recal.bam
+            {params.haptreex} -v temp.vcf -r {input.bam} -g {params.gtffile} -o {output} -d results_{params.sampleid}/atac/mapping_result/atac.positionsort.MAPQ30.bam
         else
             {params.haptreex} -v temp.vcf -r {input.bam} -g {params.gtffile} -o {output}
         fi
@@ -236,8 +238,7 @@ rule manual_phasing:
     params:
         sample=config["sample_name"]
     shell:
-        """ source activate r-environment
-        Rscript --vanilla workflow/scripts/iterative.R -c {wildcards.chrom} -v {input.not_phased} \
+        """ Rscript --vanilla workflow/scripts/iterative.R -c {wildcards.chrom} -v {input.not_phased} \
         -s {input.shapeit} \
         -x {input.haptreex} \
         -a {input.ase}/gatkgroup.sorted.table \
