@@ -45,7 +45,7 @@ rule peak_calling:
         macs2 callpeak -t {input} --outdir results_{wildcards.sample_id}/atac/peaks/MACS2/ -n atac -f BAMPE -q 0.05 -g hs --nomodel --extsize 200 --shift -100
 		
         awk '{{ if ($1>=1 && $1<=22 || $1=="X" || $1=="Y" || $1=="M") {{print $0}}}}' results_{wildcards.sample_id}/atac/peaks/MACS2/atac_peaks.narrowPeak\
-            >results/atac/peaks/MACS2/tmp.narrowPeak
+            >results_{wildcards.sample_id}/atac/peaks/MACS2/tmp.narrowPeak
         mv results_{wildcards.sample_id}/atac/peaks/MACS2/tmp.narrowPeak results_{wildcards.sample_id}/atac/peaks/MACS2/atac_peaks.narrowPeak
 
         bedtools intersect -a results_{wildcards.sample_id}/atac/peaks/MACS2/atac_peaks.narrowPeak -b {params} -v \
@@ -189,7 +189,8 @@ rule assign_cluster_to_scATAC:
     shell:
         """ mkdir -p results_{wildcards.sample_id}/atac/features
         mkdir -p results_{wildcards.sample_id}/plot
-        Rscript workflow/scripts/atac_clustering.R """
+	cd results_{wildcards.sample_id}
+        Rscript ../workflow/scripts/atac_clustering.R """
 
 rule clustering_scATAC:
     input: 
