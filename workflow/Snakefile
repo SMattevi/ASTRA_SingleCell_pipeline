@@ -20,6 +20,9 @@ if "exome"  in config["tech"]:
     myoutput.append(expand("results_{sample_id}/{tec}/prephasing/pre_phased.vcf.gz",tec="exome",sample_id=config["sample_name"]))
     myinput.append(expand("results_{sample_id}/{tec}/filtration/snps_het.vcf.gz",tec="exome",sample_id=config["sample_name"]))
 
+if config["genome_vcf"] != "NA":
+    myinput.append(config["genome_vcf"])
+
 #rules and checkpoints 
 
 rule all:
