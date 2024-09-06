@@ -45,11 +45,18 @@ path_exome: ""
 known_sites: "resources/genome/Homo_sapiens_assembly38.dbsnp138.vcf.gz" #ok
 
 ######################################################################
+##GENOME
+######################################################################
+genome_vcf: "/mnt/projects-2024bis/GSE203275-congenital-heart-disease/results_16y2m25d/atac/filtration/snps_het.vcf.gz"
+
+######################################################################
 ##GLOBAL
 ######################################################################
 
 threads_num: 5
 memory: 1G
+haptreex_exe: "~/programs/haptreex-linux/haptreex"
+htslib_path: ""
 
 hisat_index: "resources/hisat2/human/hg38/genome_snp_tran"
 
