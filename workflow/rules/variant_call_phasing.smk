@@ -28,9 +28,9 @@ rule QC_VCF:
         "results_{sample_id}/{tec}/variant_calling/strelka/results/variants/variants.vcf.gz"
     output:
         final="results_{sample_id}/{tec}/variant_calling/strelka/results/variants/variantsQC.vcf.gz",
-	    initial="results_{sample_id}/{tec}/variant_calling/strelka/results/variants/variantsPASS.vcf.gz",
+	initial="results_{sample_id}/{tec}/variant_calling/strelka/results/variants/variantsPASS.vcf.gz",
         inter=temp("results_{sample_id}/{tec}/variant_calling/strelka/results/variants/variantsrename.vcf.gz"),
-	    vcftbi="results_{sample_id}/{tec}/variant_calling/strelka/results/variants/variantsQC.vcf.gz.tbi"
+	vcftbi="results_{sample_id}/{tec}/variant_calling/strelka/results/variants/variantsQC.vcf.gz.tbi"
     conda:
         "../envs/samtools.yml"
     params:
