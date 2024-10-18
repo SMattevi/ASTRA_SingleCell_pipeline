@@ -47,7 +47,7 @@ known_sites: "resources/genome/Homo_sapiens_assembly38.dbsnp138.vcf.gz" #ok
 ######################################################################
 ##GENOME
 ######################################################################
-genome_vcf: "/mnt/projects-2024bis/GSE203275-congenital-heart-disease/results_16y2m25d/atac/filtration/snps_het.vcf.gz"
+genome_vcf: "/path/to/genome.vcf.gz"
 
 ######################################################################
 ##GLOBAL
