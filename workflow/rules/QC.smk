@@ -17,16 +17,16 @@ rule mark_dup_BAM:
     threads: config["threads_num"]
     shell: 
         """ mkdir -p tmp
-        samtools sort -m {params} -T tmp/ -@ {threads} -n -o {output.tmpsort} {input}
+        samtools sort -m {params} -T results_{wildcards.sample_id}/tmp/ -@ {threads} -n -o {output.tmpsort} {input}
         
         samtools fixmate -@ {threads} -m {output.tmpsort} {output.fixmate}
         
-        samtools sort -m {params} -@ {threads} -T tmp/ -o {output.out0} {output.fixmate}
+        samtools sort -m {params} -@ {threads} -T results_{wildcards.sample_id}/tmp/ -o {output.out0} {output.fixmate}
        
         samtools markdup -@ {threads} {output.out0} {output.final_markdup}
         samtools index -@ {threads} {output.final_markdup} 
         
-        rmdir tmp """
+        rmdir results_{wildcards.sample_id}/tmp """
 
 #QC of the aligned bam file-> params -q 30 -> used to extract cells
 rule QC_BAM:
