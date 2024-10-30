@@ -21,7 +21,7 @@ if "exome"  in config["tech"]:
     myinput.append(expand("results_{sample_id}/{tec}/filtration/snps_het.vcf.gz",tec="exome",sample_id=config["sample_name"]))
 
 if config["genome_vcf"] != "NA":
-    myinput.append(config["genome_vcf"])
+    myinput.append(expand("results_{sample_id}/genome/filtration/snps_het.vcf.gz",sample_id=config["sample_name"]))
 
 #rules and checkpoints 
 
