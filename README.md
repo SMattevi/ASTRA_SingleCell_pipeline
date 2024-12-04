@@ -60,3 +60,41 @@ snakemake --cores [cores_number] --use-conda --use-singularity
 
 ## Results architecture
 
+<details><summary>Resuts organization </summary>
+<p> 
+
+```bash 
+ results_ID/
+ ├── gex
+ │   ├── ASEChrom #ASE counts tables, one directory for chromosome
+ │   │   └── cluster1.table
+ │   │   └── cluster2.table
+ │   ├── data_by_clusters #alignment by cell clusters
+ │   │   ├── cluster1.bam
+ │   │   └── cluster2.bam
+ │   ├── alignment #RNA-seq alignment file after all QC
+ │   │   └── gex.positionsort.bam
+ │   ├── umitools_extr #extraction of valid cell barcodes 
+ │   │   ├── merged_R1_extracted.fastq.gz
+ │   │   ├── merged_R2_extracted.fastq.gz
+ │   │   └── whitelist_umitools.txt
+ │   ├── variant_calling #RNA-seq alignment file after all QC
+ │   │   └── strelka
+ │   │       └── variantsQC.vcf.gz
+ │   └── features #feature counts and cell clustering results
+ │       ├── cluster_gex.tsv
+ │       └── counts.tsv.gz
+ ├── gex_bulk #pseudo bulk RNA-seq analysis 
+ │   ├── ASEchrom
+ │   ├── alignment
+ │   └── variant_calling
+ ├── merged_vcf #merged het SNPs from all the technology analysed
+ │   └── variantsQC.vcf.gz
+ └── phased #haplotype phasing results on merged_vcf
+     ├── haptreex.tsv
+     ├── manual_refinment.vcf.gz
+     └── shapeit_whatshap.vcf.gz
+```
+
+</p>
+</details>
