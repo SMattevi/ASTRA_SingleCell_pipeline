@@ -2,7 +2,7 @@
 
 Snakemake workflow for the analysis and integration of scRNA-seq and scATAC-seq data.
 
-<img src="./rulegraph_sc.svg">
+<img src="./scPipeline.svg">
 
 ## Input files needed
 
