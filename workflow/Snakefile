@@ -4,24 +4,30 @@ SMP = [0]
 
 myoutput=list()
 myinput=list()
+prephased=list()
 
 if "gex_bulk" in config["tech"]:
     myoutput.append(expand("results_{sample_id}/{tec}/ASE{chrom}_bulk",chrom=config["chromosomes_to_phase"],tec="gex_bulk",sample_id=config["sample_name"]))
     myoutput.append(expand("results_{sample_id}/phased/manual_refinment.vcf.gz",sample_id=config["sample_name"]))
     myinput.append(expand("results_{sample_id}/{tec}/variant_calling/strelka/results/variants/variantsQC.vcf.gz",tec="gex_bulk",sample_id=config["sample_name"]))
+    prephased.append(expand("results_{sample_id}/{tec}/prephasing/pre_phased.vcf.gz",tec="gex_bulk",sample_id=config["sample_name"]))
 if "atac" in config["tech"]:
     myoutput.append(expand("results_{sample_id}/{tec}/ASE{chrom}",chrom=config["chromosomes_to_phase"],tec="atac",sample_id=config["sample_name"]))
     myinput.append(expand("results_{sample_id}/{tec}/variant_calling/strelka/results/variants/variantsQC.vcf.gz",tec="atac",sample_id=config["sample_name"]))
+    prephased.append(expand("results_{sample_id}/{tec}/prephasing/pre_phased.vcf.gz",tec="atac",sample_id=config["sample_name"]))
 if "gex" in config["tech"]:
     myoutput.append(expand("results_{sample_id}/{tec}/ASE{chrom}",chrom=config["chromosomes_to_phase"],tec="gex",sample_id=config["sample_name"]))
     myoutput.append(expand("results_{sample_id}/phased/manual_refinment.vcf.gz",sample_id=config["sample_name"]))
     myinput.append(expand("results_{sample_id}/{tec}/variant_calling/strelka/results/variants/variantsQC.vcf.gz",tec="gex",sample_id=config["sample_name"]))
+    prephased.append(expand("results_{sample_id}/{tec}/prephasing/pre_phased.vcf.gz",tec="gex",sample_id=config["sample_name"]))
 if "exome"  in config["tech"]:
     myoutput.append(expand("results_{sample_id}/{tec}/prephasing/pre_phased.vcf.gz",tec="exome",sample_id=config["sample_name"]))
     myinput.append(expand("results_{sample_id}/{tec}/filtration/snps_het.vcf.gz",tec="exome",sample_id=config["sample_name"]))
+    prephased.append(expand("results_{sample_id}/{tec}/prephasing/pre_phased.vcf.gz",tec="exome",sample_id=config["sample_name"]))
 
 if config["genome_vcf"] != "NA":
     myinput.append(expand("results_{sample_id}/genome/filtration/snps_het.vcf.gz",sample_id=config["sample_name"]))
+    prephased.append(expand("results_{sample_id}/genome/filtration/snps_het.vcf.gz",sample_id=config["sample_name"]))
 
 #rules and checkpoints 
 
