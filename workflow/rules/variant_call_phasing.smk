@@ -76,7 +76,7 @@ rule merge_tec_vcf:
 
 rule merge_tec_vcf_prephased:
     input:
-        np=expand("results_{sample_id}/{tec}/prephasing/pre_phased.vcf.gz",tec=config["tech"],sample_id=config["sample_name"])
+        np=prephased
     output:
         vp="results_{sample_id}/phased/pre_phased.vcf.gz",
         tp="results_{sample_id}/phased/pre_phased.vcf.gz.tbi",
@@ -201,6 +201,8 @@ rule phasing_haptreex:
         tec=config["tech"],
         htslib=config["htslib_path"],
         sampleid="{sample_id}"
+    conda:
+        "../envs/samtools.yml"
     shell:
         """ bcftools view {input.vcf} -Ov -o temp.vcf
         export LD_LIBRARY_PATH={params.htslib}
