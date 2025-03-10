@@ -4,6 +4,10 @@ Snakemake workflow for the analysis and integration of scRNA-seq and scATAC-seq 
 
 <img src="./scPipeline.svg">
 
+## Snakemake
+
+Snakemake is a workflow managment system. To run the pipeline you need to install it on your computer. Instructions can be found on [Snakemake website](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html#installation).
+
 ## Input files needed
 
 As input are needed the gzipped fastq file of *one* sample (possibility to input multi-lane fastq). 
