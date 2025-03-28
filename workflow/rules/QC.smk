@@ -16,7 +16,7 @@ rule mark_dup_BAM:
     params: config["memory"]
     threads: config["threads_num"]
     shell: 
-        """ mkdir -p tmp
+        """ mkdir -p results_{wildcards.sample_id}/tmp
         samtools sort -m {params} -T results_{wildcards.sample_id}/tmp/ -@ {threads} -n -o {output.tmpsort} {input}
         
         samtools fixmate -@ {threads} -m {output.tmpsort} {output.fixmate}
