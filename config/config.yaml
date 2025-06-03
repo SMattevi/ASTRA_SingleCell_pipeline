@@ -29,11 +29,15 @@ cells_number_expected: 3000
 #"results_$sample_name/gex/umitools_extr/whitelist_atac.txt" if available atac list of cells (barcoded_metrics)  or "results_$sample_name/gex/umitools_extr/whitelist_umitools.txt" or "results_$sample_name/gex/alevin_output/alevin/whitelist.txt" 
 which_whitelist: "results_$sample_name/gex/umitools_extr/whitelist_umitools.txt"
 
+#if available barcoded metrics i.e. from 10x can be added here
 barcoded_metrics: resources/human_brain_3k_per_barcode_metrics.csv
+#choose how to apply clustering to ATAC-seq, either from GEX or using MACS2
 which_clustering: "results/atac/features/fromgex_cluster_atac.tsv" #"results/atac/downstream_analysis/MACS2/FILTER/cell_cluster_table.tsv" #or "results/atac/features/fromgex_cluster_atac.tsv"
+
+#indicate which protocol used to produce GEX (i.e. chromium/chromiumV3/dropseq)
 sc_rna_protocol: "chromium" #or dropseq or chromiumV3 from https://salmon.readthedocs.io/en/latest/alevin.html#using-alevin "this flag tells the type of single-cell protocol of the input sequencing-library."
-salmon_index_directory: "/rds/general/user/smattevi/projects/lms-ware-analysis/live/smattevi/ASTRA/resources/indexes/salmon/human-tr111/"
-tx2gene: "resources/transcriptome/transcript2gene.txt"
+salmon_index_directory: "/rds/general/user/smattevi/projects/lms-ware-analysis/live/smattevi/ASTRA/resources/indexes/salmon/human-tr111/" ##path to salmon directory containing index files
+tx2gene: "resources/transcriptome/transcript2gene.txt" ##transcript to gene file, for an example:
 
 alignment: "hisat2"
 
