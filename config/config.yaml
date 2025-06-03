@@ -8,23 +8,27 @@ lanes: ##prefix input name for all the lane of the sample (supposed extension _R
   - "SampleA_lane1"
   - "SampleA_lane2"
 
-input_path: "path/input/folderatac"
+input_path: "path/input/folderatac" ##path of the input files above
 
-bl_file: "scATAC-pro_annotation/hg38_blacklist.bed"
+bl_file: "scATAC-pro_annotation/hg38_blacklist.bed" #path of the blacklist region file 
 
 ######################################################################
 ##GEX
 ######################################################################
 
 sample_prefix_lane: ##prefix input name for all the lane of the sample (supposed extension _R1.fastq.gz and _R2.fastq.gz)
-  - path/input/foldergex/SampleA_lane1
+  - "path/input/foldergex/SampleA_lane1"
   - ...
 
-pattern_umi: "CCCCCCCCCCCCCCCCNNNNNNNNNN" #patter of cell barcode and umi, here for example 16 bases of cell barcode bollowed by 10 ases of UMI
+#patter of cell barcode and umi, here for example 16 bases of cell barcode bollowed by 10 ases of UMI
+pattern_umi: "CCCCCCCCCCCCCCCCNNNNNNNNNN" 
 #expected number of cells if available
 cells_number_expected: 3000
 
-which_whitelist: "results/gex/umitools_extr/whitelist_umitools.txt"  #"results/gex/umitools_extr/whitelist_atac.txt" if available atac list of cells (barcoded_metrics)  or "results/gex/umitools_extr/whitelist_umitools.txt" or "results/gex/alevin_output/alevin/whitelist.txt"   
+#several options for the creation of the cell whitelist: with umitools, aleving or impute from ATAC-seq results. Select from the following.
+#"results_$sample_name/gex/umitools_extr/whitelist_atac.txt" if available atac list of cells (barcoded_metrics)  or "results_$sample_name/gex/umitools_extr/whitelist_umitools.txt" or "results_$sample_name/gex/alevin_output/alevin/whitelist.txt" 
+which_whitelist: "results_$sample_name/gex/umitools_extr/whitelist_umitools.txt"
+
 barcoded_metrics: resources/human_brain_3k_per_barcode_metrics.csv
 which_clustering: "results/atac/features/fromgex_cluster_atac.tsv" #"results/atac/downstream_analysis/MACS2/FILTER/cell_cluster_table.tsv" #or "results/atac/features/fromgex_cluster_atac.tsv"
 sc_rna_protocol: "chromium" #or dropseq or chromiumV3 from https://salmon.readthedocs.io/en/latest/alevin.html#using-alevin "this flag tells the type of single-cell protocol of the input sequencing-library."
