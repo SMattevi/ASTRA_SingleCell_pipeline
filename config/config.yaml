@@ -37,7 +37,7 @@ which_clustering: "results/atac/features/fromgex_cluster_atac.tsv" #"results/ata
 #indicate which protocol used to produce GEX (i.e. chromium/chromiumV3/dropseq)
 sc_rna_protocol: "chromium" #or dropseq or chromiumV3 from https://salmon.readthedocs.io/en/latest/alevin.html#using-alevin "this flag tells the type of single-cell protocol of the input sequencing-library."
 salmon_index_directory: "/rds/general/user/smattevi/projects/lms-ware-analysis/live/smattevi/ASTRA/resources/indexes/salmon/human-tr111/" ##path to salmon directory containing index files
-tx2gene: "resources/transcriptome/transcript2gene.txt" ##transcript to gene file, for an example:
+tx2gene: "resources/transcriptome/transcript2gene.txt" ##transcript to gene file, for an example look at create_tx2gene.sh
 
 alignment: "hisat2"
 
@@ -50,11 +50,12 @@ fastqs_exome: ##prefix input name for all the lane of the sample
 
 path_exome: ""
 
-known_sites: "resources/genome/Homo_sapiens_assembly38.dbsnp138.vcf.gz" #ok
+known_sites: "resources/genome/Homo_sapiens_assembly38.dbsnp138.vcf.gz" #SNPs database
 
 ######################################################################
 ##GENOME
 ######################################################################
+#if available, input here genomic info of the sample (i.e. obtained from WES (see ASTRA for bulk data for processing) or WGS or SNPArray)
 genome_vcf: "/path/to/genome.vcf.gz"
 
 ######################################################################
