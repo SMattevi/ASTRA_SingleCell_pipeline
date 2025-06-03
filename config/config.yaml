@@ -16,7 +16,7 @@ bl_file: "scATAC-pro_annotation/hg38_blacklist.bed" #path of the blacklist regio
 ##GEX
 ######################################################################
 
-sample_prefix_lane: ##prefix input name for all the lane of the sample (supposed extension _R1.fastq.gz and _R2.fastq.gz)
+sample_prefix_lane: ##prefix input name for all the lane of the sample (supposed extension _R1_001.fastq.gz and _R2_001.fastq.gz)
   - "path/input/foldergex/SampleA_lane1"
   - ...
 
