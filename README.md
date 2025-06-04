@@ -39,6 +39,10 @@ For an example look at this [file](hisat_indexes.sh).
 
 Download and save Strelka executable (instructions available [here](https://github.com/Illumina/strelka/blob/v2.9.x/docs/userGuide/quickStart.md#strelka-quick-start), version used 2.9.10-1).
 
+### HapTree-X
+
+Download and save HapTree-X executable (instructions available [here](https://github.com/0xTCG/haptreex/releases), version used v1.1).
+
 ### Other reference files 
 
 dbSNPs for variant calling with Shapeit4 available [here]()
