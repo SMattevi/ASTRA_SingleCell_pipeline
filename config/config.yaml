@@ -1,32 +1,46 @@
-sample_name: ABC
+#indicate the name of your sample (the results folder will be named upon this)
+sample_name: ABC 
 
 ######################################################################
 ##ATAC
 ######################################################################
 
-lanes: ##prefix input name for all the lane of the sample (supposed extension _R1.fastq.gz and _R2.fastq.gz)
+#prefix input name for all the lane of the sample (supposed extension _R1.fastq.gz and _R2.fastq.gz)
+lanes: 
   - "SampleA_lane1"
   - "SampleA_lane2"
 
-input_path: "path/input/folderatac" ##path of the input files above
+#path of the input files above
+input_path: "path/input/folderatac" 
 
-bl_file: "scATAC-pro_annotation/hg38_blacklist.bed" #path of the blacklist region file 
+#path of the blacklist region file 
+bl_file: "scATAC-pro_annotation/hg38_blacklist.bed" 
+
+config_file_scATACpro: "config/scATACconfig.txt"
 
 ######################################################################
 ##GEX
 ######################################################################
 
-sample_prefix_lane: ##prefix input name for all the lane of the sample (supposed extension automatically added during analysis are _R1_001.fastq.gz and _R2_001.fastq.gz)
-  - "path/input/foldergex/SampleA_lane1"
+#prefix input name for all the lane of the sample (supposed extension automatically added during analysis are _R1_001.fastq.gz and _R2_001.fastq.gz)
+sample_prefix_lane: 
+  - "path/input/foldergex/SampleA_lane1" #only path and prefix! the _R1... and _R2... are added automatically
   - ...
 
 #patter of cell barcode and umi, here for example 16 bases of cell barcode bollowed by 10 ases of UMI
 pattern_umi: "CCCCCCCCCCCCCCCCNNNNNNNNNN" 
+
 #expected number of cells if available
 cells_number_expected: 3000
 
-#several options for the creation of the cell whitelist: with umitools, aleving or impute from ATAC-seq results. Select from the following.
-#"results_$sample_name/gex/umitools_extr/whitelist_atac.txt" if available atac list of cells (barcoded_metrics)  or "results_$sample_name/gex/umitools_extr/whitelist_umitools.txt" or "results_$sample_name/gex/alevin_output/alevin/whitelist.txt" 
+######################################################################
+##WHITELIST AND SALMON FILES
+######################################################################
+
+#Several options for the creation of the cell whitelist: 
+# - umitools: please indicate "results_$sample_name/gex/umitools_extr/whitelist_umitools.txt"
+# - alevin: please indicate "results_$sample_name/gex/alevin_output/alevin/whitelist.txt"
+# - impute from ATAC-seq results (if available atac list of cells (barcoded_metrics)): please indicate "results_$sample_name/gex/umitools_extr/whitelist_atac.txt"
 which_whitelist: "results_$sample_name/gex/umitools_extr/whitelist_umitools.txt"
 
 #if available barcoded metrics i.e. from 10x can be added here
@@ -36,21 +50,24 @@ which_clustering: "results/atac/features/fromgex_cluster_atac.tsv" #"results/ata
 
 #indicate which protocol used to produce GEX (i.e. chromium/chromiumV3/dropseq)
 sc_rna_protocol: "chromium" #or dropseq or chromiumV3 from https://salmon.readthedocs.io/en/latest/alevin.html#using-alevin "this flag tells the type of single-cell protocol of the input sequencing-library."
-salmon_index_directory: "/rds/general/user/smattevi/projects/lms-ware-analysis/live/smattevi/ASTRA/resources/indexes/salmon/human-tr111/" ##path to salmon directory containing index files
-tx2gene: "resources/transcriptome/transcript2gene.txt" ##transcript to gene file, for an example look at create_tx2gene.sh
+#path to salmon directory containing index files
+salmon_index_directory: "/rds/general/user/smattevi/projects/lms-ware-analysis/live/smattevi/ASTRA/resources/indexes/salmon/human-tr111/"
+#transcript to gene file, for an example look at create_tx2gene.sh
+tx2gene: "resources/transcriptome/transcript2gene.txt"
 
 alignment: "hisat2"
 
 ######################################################################
 ##EXOME
 ######################################################################
-
-fastqs_exome: ##prefix input name for all the lane of the sample
+#prefix input name for all the lane of the sample
+fastqs_exome:
     - ""
-
+#path of the input files above
 path_exome: ""
 
-known_sites: "resources/genome/Homo_sapiens_assembly38.dbsnp138.vcf.gz" #SNPs database
+#SNPs database
+known_sites: "resources/genome/Homo_sapiens_assembly38.dbsnp138.vcf.gz" 
 
 ######################################################################
 ##GENOME
@@ -61,37 +78,40 @@ genome_vcf: "/path/to/genome.vcf.gz"
 ######################################################################
 ##GLOBAL
 ######################################################################
-
+#can be modified as needed both the number of threads and memoory available
 threads_num: 5
 memory: 1G
+
+#indicate thepath of the HapTree-X excecutble
 haptreex_exe: "~/programs/haptreex-linux/haptreex"
+#if not installed from root insert the path of the htslib needed for HapTree-X correct excecution
 htslib_path: ""
 
+#path of hisat index (see README file for clarification)
 hisat_index: "resources/hisat2/human/hg38/genome_snp_tran"
-
-config_file_scATACpro: "config/scATACconfig.txt"
-
+#path to genome gtf
 genome_gtf: "resources/genome/human/hg38/Homo_sapiens.GRCh38.106.chr.gtf"
-
+#path to genome dictionary
 genome_dict: "resources/genome/Homo_sapiens_assembly38.dict"
-
+#path to genome fasta file
 genome_fa: "resources/genome/human/hg38/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
-
+#path to strelka installation
 strelka_path: "resources/strelka/share/strelka-2.9.10-1/"
 
+#path to reference VCF files (expected one per chromosome listed below)
 path_ALLvcf: resources/1kgenome/30x
 prefix_ALLvcf: chr
 extension_ALLvcf: vcf.gz
 
-tech: #if not each "technoogy" comment line
+tech: #if not each "technoogy" comment the line
   - "atac"
   - "gex"
   - "gex_bulk"
   - "exome"
   
 #variants QC parameters  
-AF: 0.2
-DP: 10
+AF: 0.2 #allelic frequency
+DP: 10 #allelic depth
 
 chromosomes_to_phase: 
   - 1
@@ -118,4 +138,5 @@ chromosomes_to_phase:
   - 22
   - "X"
 
+#indicate the sex of the sample analysed
 sex: "female" # or male
